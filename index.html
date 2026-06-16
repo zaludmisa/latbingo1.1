@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Latinské BINGO – hra pro hodinu latiny</title>
+<meta name="description" content="Interaktivní bingo hra pro středoškolskou výuku latiny. 89 pojmů – latinská slovíčka a římské reálie. Bez instalace, funguje v prohlížeči.">
+<meta name="author" content="">
+<meta name="theme-color" content="#8B1A1A">
+
+<!-- Open Graph (sdílení na sociálních sítích) -->
+<meta property="og:title" content="Latinské BINGO">
+<meta property="og:description" content="Interaktivní bingo hra pro hodinu latiny – slovíčka a římské reálie. Každý hráč má svou náhodnou kartu.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="cs_CZ">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Latinské BINGO">
+<meta name="twitter:description" content="Interaktivní bingo hra pro hodinu latiny – slovíčka a římské reálie.">
+
+<!-- Favicon (inline SVG → data URI, bez externích souborů) -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏺</text></svg>">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+
+  :root {
+    --red:    #8B1A1A;
+    --red-lt: #C0392B;
+    --red-bg: #FDF0EE;
+    --gold:   #B8860B;
+    --gold-lt:#F5C842;
+    --gold-bg:#FEFAE8;
+    --stone:  #F4F1EA;
+    --stone2: #E8E3D8;
+    --ink:    #1C1410;
+    --muted:  #6B5E52;
+    --white:  #FFFEFB;
+    --green:  #1A5E3A;
+    --green-bg:#EAF5EE;
+    --blue:   #1A3A5E;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--stone);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+
+  /* ── TOP NAV ── */
+  header {
+    background: var(--red);
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  }
+  .logo {
+    font-family: 'IM Fell English', serif;
+    font-size: 22px;
+    color: var(--gold-lt);
+    letter-spacing: .02em;
+    white-space: nowrap;
+  }
+  .logo span { color: #fff; font-style: italic; }
+  nav { display: flex; gap: 4px; }
+  .nav-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,.7);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+  .nav-btn.active { background: rgba(255,255,255,.18); color: #fff; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; max-width: 720px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+  .screen.visible { display: block; }
+
+  /* ── TEACHER SCREEN ── */
+  .draw-stage {
+    background: var(--white);
+    border: 1.5px solid var(--stone2);
+    border-radius: 14px;
+    padding: 2rem 1.5rem 1.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .draw-stage::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--red), var(--gold));
+  }
+  .stage-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .75rem;
+  }
+  .stage-term {
+    font-family: 'IM Fell English', serif;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    color: var(--red);
+    line-height: 1.1;
+    min-height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stage-hint {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: .6rem;
+    font-style: italic;
+    min-height: 1.4rem;
+  }
+  .stage-cat {
+    display: inline-block;
+    margin-top: .75rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    min-height: 22px;
+  }
+  .stage-cat.vocab { background: #EAF0FB; color: var(--blue); }
+  .stage-cat.realia { background: var(--red-bg); color: var(--red); }
+
+  .btn-draw {
+    display: block;
+    width: 100%;
+    margin-bottom: .6rem;
+    padding: 14px;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'IM Fell English', serif;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .btn-draw:hover { background: var(--red-lt); }
+  .btn-draw:active { transform: scale(.98); }
+  .btn-draw:disabled { background: var(--stone2); color: var(--muted); cursor: not-allowed; }
+
+  .btn-sec {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--stone2);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-sec:hover { background: var(--stone2); }
+
+  .drawn-section { margin-top: 1.25rem; }
+  .drawn-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .6rem;
+  }
+  .drawn-header span { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .drawn-count { font-size: 12px; color: var(--muted); }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .chip {
+    font-size: 12px;
+    font-family: 'IM Fell English', serif;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--white);
+    border: 1px solid var(--stone2);
+    color: var(--ink);
+  }
+  .chip.vocab { border-color: #A8C0E8; background: #EAF0FB; color: var(--blue); }
+  .chip.realia { border-color: #E8A8A8; background: var(--red-bg); color: var(--red); }
+
+  /* ── PLAYER SCREEN ── */
+  .setup-row {
+    display: flex;
+    gap: .6rem;
+    margin-bottom: 1.25rem;
+  }
+  .setup-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--stone2);
+    background: var(--white);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .setup-row input:focus { border-color: var(--red); }
+  .setup-row input::placeholder { color: var(--muted); }
+  .btn-primary {
+    padding: 10px 18px;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .btn-primary:hover { background: var(--red-lt); }
+
+  /* WIN BANNER */
+  .win-banner {
+    display: none;
+    background: var(--green-bg);
+    border: 1.5px solid var(--green);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  .win-banner.show { display: block; }
+  .win-banner h3 {
+    font-family: 'IM Fell English', serif;
+    font-size: 26px;
+    color: var(--green);
+  }
+  .win-banner p { font-size: 13px; color: #2E7D53; margin-top: 4px; }
+
+  /* BINGO CARD */
+  .card-wrap { background: var(--white); border-radius: 14px; border: 1.5px solid var(--stone2); overflow: hidden; }
+  .card-title-bar {
+    background: var(--red);
+    padding: .4rem .6rem;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .card-title-bar span {
+    font-family: 'IM Fell English', serif;
+    font-size: 22px;
+    color: var(--gold-lt);
+    text-align: center;
+  }
+  .bingo-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3px;
+    padding: 3px;
+    background: var(--stone2);
+  }
+  .cell {
+    background: var(--white);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'IM Fell English', serif;
+    font-size: clamp(9px, 2.2vw, 13px);
+    line-height: 1.2;
+    padding: 4px;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+    word-break: break-word;
+    hyphens: auto;
+    position: relative;
+  }
+  .cell:hover:not(.free):not(.win-cell) { background: var(--stone); }
+  .cell.marked { background: var(--red-bg); color: var(--red); }
+  .cell.marked::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    opacity: .5;
+    pointer-events: none;
+  }
+  .cell.free { background: var(--gold-bg); color: var(--gold); cursor: default; font-style: italic; }
+  .cell.win-cell { background: var(--gold-bg); color: var(--gold); font-weight: 700; }
+  .cell.win-cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 3px solid var(--gold);
+    pointer-events: none;
+  }
+
+  .hint-text { font-size: 12px; color: var(--muted); text-align: center; margin-top: .75rem; font-style: italic; }
+
+  /* ── ABOUT / TERMS SCREEN ── */
+  .about-intro {
+    background: var(--white);
+    border: 1.5px solid var(--stone2);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .about-intro h2 {
+    font-family: 'IM Fell English', serif;
+    font-size: 20px;
+    color: var(--red);
+    margin-bottom: .6rem;
+  }
+  .about-intro p { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: .5rem; }
+  .about-intro p:last-child { margin-bottom: 0; }
+
+  .terms-section { margin-bottom: 1.5rem; }
+  .terms-section h3 {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    margin-bottom: .75rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--stone2);
+  }
+  .terms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 5px;
+  }
+  .term-row {
+    background: var(--white);
+    border: 1px solid var(--stone2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .term-row .lat {
+    font-family: 'IM Fell English', serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .term-row .czh { font-size: 11px; color: var(--muted); text-align: right; }
+  .terms-section.vocab-sec .term-row { border-left: 3px solid #A8C0E8; }
+  .terms-section.realia-sec .term-row { border-left: 3px solid #E8A8A8; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar-wrap { margin-bottom: 1rem; }
+  .progress-bar-track { height: 4px; background: var(--stone2); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--gold)); border-radius: 2px; transition: width .3s; }
+  .progress-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-align: right; }
+
+  @media (max-width: 480px) {
+    .screen { padding: 1rem .75rem 3rem; }
+    .logo { font-size: 18px; }
+    .nav-btn { padding: 6px 10px; font-size: 12px; }
+    .stage-term { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">BINGO <span>Latina</span></div>
+  <nav>
+    <button class="nav-btn active" onclick="switchScreen('teacher', this)">Losování</button>
+    <button class="nav-btn" onclick="switchScreen('player', this)">Moje karta</button>
+    <button class="nav-btn" onclick="switchScreen('about', this)">Pojmy</button>
+  </nav>
+</header>
+
+<!-- ── TEACHER SCREEN ── -->
+<div id="screen-teacher" class="screen visible">
+  <div class="draw-stage">
+    <div class="stage-label">Aktuální pojem</div>
+    <div class="stage-term" id="cur-term">—</div>
+    <div class="stage-hint" id="cur-hint"></div>
+    <div class="stage-cat" id="cur-cat"></div>
+  </div>
+
+  <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-label" id="progress-label"></div>
+  </div>
+
+  <button class="btn-draw" id="btn-draw" onclick="drawTerm()">🏺 Vytáhni pojem</button>
+  <button class="btn-sec" onclick="resetDraw()">↺ Začít znovu</button>
+
+  <div class="drawn-section" id="drawn-section" style="display:none">
+    <div class="drawn-header">
+      <span>Vytažené pojmy</span>
+      <span class="drawn-count" id="drawn-count"></span>
+    </div>
+    <div class="chips" id="chips-wrap"></div>
+  </div>
+</div>
+
+<!-- ── PLAYER SCREEN ── -->
+<div id="screen-player" class="screen">
+  <div class="setup-row">
+    <input type="text" id="player-name" placeholder="Tvoje jméno…" maxlength="30" />
+    <button class="btn-primary" onclick="generateCard()">Nová karta</button>
+  </div>
+
+  <div class="win-banner" id="win-banner">
+    <h3>✦ BINGO! ✦</h3>
+    <p id="win-msg">Gratulujeme — máš celou řadu!</p>
+  </div>
+
+  <div id="card-area" style="display:none">
+    <div class="card-wrap">
+      <div class="card-title-bar">
+        <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+      </div>
+      <div class="bingo-grid" id="bingo-grid"></div>
+    </div>
+    <p class="hint-text">Klikni na políčko, když zazní pojem. Prostřední políčko FREE je zdarma.</p>
+  </div>
+</div>
+
+<!-- ── ABOUT SCREEN ── -->
+<div id="screen-about" class="screen">
+  <div class="about-intro">
+    <h2>Jak hrát</h2>
+    <p>Učitel otevře záložku <strong>Losování</strong> a postupně vytahuje pojmy — latinský výraz čte nahlas, překlad řekne až po chvíli. Žáci sledují svou kartu v záložce <strong>Moje karta</strong> a klikají na nalezené pojmy.</p>
+    <p>Kdo první doplní celou řadu (vodorovně, svisle nebo diagonálně), křičí BINGO. Každý hráč si vygeneruje svou vlastní náhodnou kartu — všechny se liší.</p>
+  </div>
+  <div class="terms-section vocab-sec">
+    <h3>Latinská slovíčka (<span id="vocab-count"></span>)</h3>
+    <div class="terms-grid" id="vocab-grid"></div>
+  </div>
+  <div class="terms-section realia-sec">
+    <h3>Římské reálie (<span id="realia-count"></span>)</h3>
+    <div class="terms-grid" id="realia-grid"></div>
+  </div>
+</div>
+
+<script>
+const TERMS = [
+  // ── SLOVÍČKA ──
+  {t:"aqua",s:"voda",c:"vocab"},
+  {t:"terra",s:"země / půda",c:"vocab"},
+  {t:"luna",s:"měsíc",c:"vocab"},
+  {t:"sol",s:"slunce",c:"vocab"},
+  {t:"via",s:"cesta / ulice",c:"vocab"},
+  {t:"porta",s:"brána / dveře",c:"vocab"},
+  {t:"caelum",s:"nebe / nebesa",c:"vocab"},
+  {t:"pax",s:"mír",c:"vocab"},
+  {t:"bellum",s:"válka",c:"vocab"},
+  {t:"rex",s:"král",c:"vocab"},
+  {t:"dux",s:"vůdce / velitel",c:"vocab"},
+  {t:"miles",s:"voják",c:"vocab"},
+  {t:"populus",s:"lid / národ",c:"vocab"},
+  {t:"senatus",s:"senát",c:"vocab"},
+  {t:"lex",s:"zákon",c:"vocab"},
+  {t:"virtus",s:"statečnost / ctnost",c:"vocab"},
+  {t:"gloria",s:"sláva",c:"vocab"},
+  {t:"fama",s:"pověst / zpráva",c:"vocab"},
+  {t:"amor",s:"láska",c:"vocab"},
+  {t:"mors",s:"smrt",c:"vocab"},
+  {t:"vita",s:"život",c:"vocab"},
+  {t:"tempus",s:"čas",c:"vocab"},
+  {t:"annus",s:"rok",c:"vocab"},
+  {t:"dies",s:"den",c:"vocab"},
+  {t:"nox",s:"noc",c:"vocab"},
+  {t:"caput",s:"hlava / hlavní město",c:"vocab"},
+  {t:"manus",s:"ruka",c:"vocab"},
+  {t:"oculus",s:"oko",c:"vocab"},
+  {t:"verbum",s:"slovo",c:"vocab"},
+  {t:"liber",s:"kniha / svobodný",c:"vocab"},
+  {t:"forum",s:"tržiště / náměstí",c:"vocab"},
+  {t:"urbs",s:"město",c:"vocab"},
+  {t:"domus",s:"dům / domov",c:"vocab"},
+  {t:"nauta",s:"námořník",c:"vocab"},
+  {t:"puer",s:"chlapec",c:"vocab"},
+  {t:"puella",s:"dívka",c:"vocab"},
+  {t:"magister",s:"učitel",c:"vocab"},
+  {t:"discipulus",s:"žák",c:"vocab"},
+  {t:"amicus",s:"přítel",c:"vocab"},
+  {t:"hostis",s:"nepřítel",c:"vocab"},
+  {t:"silva",s:"les",c:"vocab"},
+  {t:"flumen",s:"řeka",c:"vocab"},
+  {t:"mare",s:"moře",c:"vocab"},
+  {t:"mons",s:"hora",c:"vocab"},
+  {t:"iter",s:"cesta / pochod",c:"vocab"},
+  // ── REÁLIE ──
+  {t:"Caesar",s:"diktátor – zavražděn v Senátu",c:"realia"},
+  {t:"Augustus",s:"první římský císař",c:"realia"},
+  {t:"Cicero",s:"největší řečník Říma",c:"realia"},
+  {t:"Nero",s:"císař – hořící Řím",c:"realia"},
+  {t:"Marcus Aurelius",s:"filosof na trůně",c:"realia"},
+  {t:"Vergilius",s:"autor Aeneidy",c:"realia"},
+  {t:"Horatius",s:"Carpe diem!",c:"realia"},
+  {t:"Ovidius",s:"autor Proměn, vyhnán",c:"realia"},
+  {t:"Spartacus",s:"vůdce otrocké vzpoury",c:"realia"},
+  {t:"Hannibal",s:"přešel Alpy se slony",c:"realia"},
+  {t:"Kleopatra",s:"egyptská královna",c:"realia"},
+  {t:"Romulus",s:"zakladatel Říma",c:"realia"},
+  {t:"Koloseum",s:"aréna – gladiátoři",c:"realia"},
+  {t:"Pantheon",s:"chrám všech bohů",c:"realia"},
+  {t:"Circus Maximus",s:"závodiště pro vozy",c:"realia"},
+  {t:"Capitolium",s:"posvátný vrch Říma",c:"realia"},
+  {t:"Forum Romanum",s:"centrum veřejného života",c:"realia"},
+  {t:"SPQR",s:"Senatus Populusque Romanus",c:"realia"},
+  {t:"Rubicon",s:"Caesar ho překročil → válka",c:"realia"},
+  {t:"Ides Martiae",s:"15. března – smrt Caesara",c:"realia"},
+  {t:"Aeneas",s:"trojský hrdina, předek Římanů",c:"realia"},
+  {t:"Iuppiter",s:"nejvyšší bůh – blesky",c:"realia"},
+  {t:"Mars",s:"bůh války",c:"realia"},
+  {t:"Venus",s:"bohyně lásky",c:"realia"},
+  {t:"Minerva",s:"bohyně moudrosti",c:"realia"},
+  {t:"Neptun",s:"bůh moře",c:"realia"},
+  {t:"veni vidi vici",s:"přišel jsem, viděl, zvítězil",c:"realia"},
+  {t:"alea iacta est",s:"kostky jsou vrženy",c:"realia"},
+  {t:"carpe diem",s:"užij dne (Horatius)",c:"realia"},
+  {t:"et tu Brute",s:"i ty, Brute?",c:"realia"},
+  {t:"ave Caesar",s:"zdráv buď, Caesare",c:"realia"},
+  {t:"Roma",s:"věčné město",c:"realia"},
+  {t:"Carthago",s:"Cato: musí být zničena",c:"realia"},
+  {t:"gladiátor",s:"bojovník v aréně",c:"realia"},
+  {t:"triumf",s:"slavnostní průvod vítěze",c:"realia"},
+  {t:"legie",s:"základní jednotka armády",c:"realia"},
+  {t:"toga",s:"oděv římského občana",c:"realia"},
+  {t:"gladius",s:"krátký meč legionáře",c:"realia"},
+  {t:"aquila",s:"orlí standarta legie",c:"realia"},
+  {t:"senátor",s:"člen římského senátu",c:"realia"},
+  {t:"konzul",s:"nejvyšší úředník republiky",c:"realia"},
+  {t:"patron",s:"ochránce svých klientů",c:"realia"},
+  {t:"Vulcanus",s:"bůh ohně a kovářů",c:"realia"},
+  {t:"Mercurius",s:"posel bohů, bůh obchodu",c:"realia"},
+  {t:"Pompeius",s:"Caesarův rival, zavražděn v Egyptě",c:"realia"},
+];
+
+// ── STATE ──
+let drawnIdx = [];
+let cardCells = [];
+let wonFlag = false;
+
+// ── NAVIGATION ──
+function switchScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('visible');
+  btn.classList.add('active');
+}
+
+// ── TEACHER ──
+function drawTerm() {
+  const remaining = TERMS.map((_, i) => i).filter(i => !drawnIdx.includes(i));
+  if (!remaining.length) return;
+  const pick = remaining[Math.floor(Math.random() * remaining.length)];
+  drawnIdx.push(pick);
+  const term = TERMS[pick];
+
+  document.getElementById('cur-term').textContent = term.t;
+  document.getElementById('cur-hint').textContent = '→ ' + term.s;
+  const catEl = document.getElementById('cur-cat');
+  catEl.textContent = term.c === 'vocab' ? 'Latinské slovíčko' : 'Římské reálie';
+  catEl.className = 'stage-cat ' + term.c;
+
+  // progress
+  document.getElementById('progress-wrap').style.display = 'block';
+  const pct = Math.round(drawnIdx.length / TERMS.length * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = drawnIdx.length + ' / ' + TERMS.length + ' pojmů vytaženo';
+
+  // chips
+  document.getElementById('drawn-section').style.display = 'block';
+  document.getElementById('drawn-count').textContent = drawnIdx.length + ' pojmů';
+  const chip = document.createElement('span');
+  chip.className = 'chip ' + term.c;
+  chip.textContent = term.t;
+  chip.title = term.s;
+  document.getElementById('chips-wrap').prepend(chip);
+
+  if (drawnIdx.length >= TERMS.length) {
+    document.getElementById('btn-draw').disabled = true;
+  }
+}
+
+function resetDraw() {
+  drawnIdx = [];
+  document.getElementById('cur-term').textContent = '—';
+  document.getElementById('cur-hint').textContent = '';
+  document.getElementById('cur-cat').textContent = '';
+  document.getElementById('cur-cat').className = 'stage-cat';
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('drawn-section').style.display = 'none';
+  document.getElementById('chips-wrap').innerHTML = '';
+  document.getElementById('btn-draw').disabled = false;
+}
+
+// ── PLAYER ──
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateCard() {
+  const picked = shuffle(TERMS).slice(0, 24);
+  picked.splice(12, 0, { t: 'FREE', s: '', c: 'free' });
+  cardCells = picked.map((term, i) => ({ term, marked: i === 12 }));
+  wonFlag = false;
+  document.getElementById('win-banner').classList.remove('show');
+  renderGrid();
+  document.getElementById('card-area').style.display = 'block';
+}
+
+function renderGrid() {
+  const grid = document.getElementById('bingo-grid');
+  grid.innerHTML = '';
+  cardCells.forEach((cell, i) => {
+    const div = document.createElement('div');
+    let cls = 'cell';
+    if (cell.term.c === 'free') cls += ' free';
+    else if (cell.marked) cls += ' marked';
+    div.className = cls;
+    div.textContent = cell.term.t;
+    div.title = cell.term.s || '';
+    if (cell.term.c !== 'free') div.onclick = () => toggleCell(i);
+    grid.appendChild(div);
+  });
+}
+
+function toggleCell(i) {
+  cardCells[i].marked = !cardCells[i].marked;
+  renderGrid();
+  checkWin();
+}
+
+const WIN_LINES = [
+  [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+  [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+  [0,6,12,18,24],[4,8,12,16,20]
+];
+
+function checkWin() {
+  if (wonFlag) return;
+  const marked = cardCells.map(c => c.marked);
+  for (const line of WIN_LINES) {
+    if (line.every(i => marked[i])) {
+      wonFlag = true;
+      document.getElementById('win-banner').classList.add('show');
+      document.getElementById('win-banner').scrollIntoView({ behavior: 'smooth' });
+      const cells = document.querySelectorAll('.bingo-grid .cell');
+      line.forEach(i => {
+        cells[i].className = 'cell win-cell';
+      });
+      return;
+    }
+  }
+}
+
+// ── ABOUT PAGE ──
+function buildAbout() {
+  const vocab = TERMS.filter(t => t.c === 'vocab');
+  const realia = TERMS.filter(t => t.c === 'realia');
+  document.getElementById('vocab-count').textContent = vocab.length;
+  document.getElementById('realia-count').textContent = realia.length;
+
+  function fillGrid(id, arr) {
+    const g = document.getElementById(id);
+    arr.forEach(t => {
+      const div = document.createElement('div');
+      div.className = 'term-row';
+      div.innerHTML = `<span class="lat">${t.t}</span><span class="czh">${t.s}</span>`;
+      g.appendChild(div);
+    });
+  }
+  fillGrid('vocab-grid', vocab);
+  fillGrid('realia-grid', realia);
+}
+buildAbout();
+</script>
+
+<footer style="text-align:center;padding:2rem 1rem 3rem;font-size:12px;color:#6B5E52;font-family:'Inter',sans-serif;">
+  Latinské BINGO &mdash; volně k použití pro vzdělávací účely
+  &nbsp;·&nbsp;
+  <a href="https://github.com" target="_blank" rel="noopener" id="gh-link"
+     style="color:#8B1A1A;text-decoration:none;font-weight:500;">GitHub</a>
+</footer>
+</body>
+</html>
